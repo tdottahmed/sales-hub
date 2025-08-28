@@ -34,7 +34,7 @@ class ProfileController extends Controller
 
         $request->user()->save();
 
-        return Redirect::route('profile.edit')->with('status', 'profile-updated');
+        return redirect()->route('profile.edit')->with('success', 'profile-updated');
     }
 
     /**
@@ -56,5 +56,19 @@ class ProfileController extends Controller
         $request->session()->regenerateToken();
 
         return Redirect::to('/');
+    }
+    public function updateImage(Request $request): RedirectResponse
+    {
+        if ($request->has('image')) {
+            $filePath = filepondUpload($request->image, 'profile');
+            if ($filePath) {
+                $request->user()->update([
+                    'image' => $filePath,
+                ]);
+                return Redirect::route('profile.edit')->with('success', 'Profile image updated');
+            }
+        }
+
+        return Redirect::route('profile.edit')->with('error', 'Failed to update profile image');
     }
 }

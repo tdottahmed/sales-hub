@@ -87,7 +87,7 @@ class PermissionController extends Controller
 
     private function redirectWithSuccess($message)
     {
-        return redirect()->route('users.index')
+        return redirect()->route('permissions.index')
             ->with('success', $message);
     }
 

@@ -11,5 +11,8 @@ Route::group(['middleware' => ['role:super-admin|admin|staff|user']], function (
     Route::resource('permissions', PermissionController::class)->except('show');
     Route::resource('users', UserController::class);
 
-    Route::get('settings/organization', [ApplicationSetupController::class, 'organization'])->name('settings.organization');
+    Route::get('dashboard', [\App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('dashboard');
+
+    Route::get('settings/organization', [ApplicationSetupController::class, 'index'])->name('applicationSetup.index');
+    Route::post('settings/organization', [ApplicationSetupController::class, 'update'])->name('applicationSetup.update');
 });

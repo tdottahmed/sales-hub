@@ -1,39 +1,26 @@
-@push('styles')
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-@endpush
-{{-- <h6 class="fw-semibold">Basic Select</h6>
-<select class="js-example-basic-single" name="state">
-    <option value="AL">Alabama</option>
-    <option value="MA">Madrid</option>
-    <option value="TO">Toronto</option>
-    <option value="LO">Londan</option>
-    <option value="WY">Wyoming</option>
-</select> --}}
-<select class="js-example-basic-multiple" name="states[]" multiple="multiple">
-    <optgroup label="UK">
-        <option value="London">London</option>
-        <option value="Manchester" selected>Manchester</option>
-        <option value="Liverpool">Liverpool</option>
-    </optgroup>
-    <optgroup label="FR">
-        <option value="Paris">Paris</option>
-        <option value="Lyon">Lyon</option>
-        <option value="Marseille">Marseille</option>
-    </optgroup>
-    <optgroup label="SP">
-        <option value="Madrid" selected>Madrid</option>
-        <option value="Barcelona">Barcelona</option>
-        <option value="Malaga">Malaga</option>
-    </optgroup>
-    <optgroup label="CA">
-        <option value="Montreal">Montreal</option>
-        <option value="Toronto">Toronto</option>
-        <option value="Vancouver">Vancouver</option>
-    </optgroup>
-</select>
-@push('scripts')
-    <!--select2 cdn-->
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+@props([
+    'displayId' => false,
+])
+<div class="form-group mb-3">
+    <label for="{{ $name }}">{{ __($label) }}</label>
+    <select id="{{ $name }}" name="{{ $name }}" class="form-control js-example-basic-single"
+        style="width: 100%;">
+        <option value="" disabled>{{ $placeholder }}</option>
+        @foreach ($options as $key => $value)
+            <option value="{{ $key }}" {{ $key == $selected ? 'selected' : '' }}>
+                {{ $displayId ? $key . ' - ' . $value : $value }}
+            </option>
+        @endforeach
+    </select>
+    @error($name)
+        <span class="text-danger">{{ __($message) }}</span>
+    @enderror
+</div>
 
-    <script src="/assets/admin/js/pages/select2.init.js"></script>
+@push('scripts')
+    <script>
+        $(document).ready(function() {
+            $('.js-example-basic-single').select2();
+        });
+    </script>
 @endpush

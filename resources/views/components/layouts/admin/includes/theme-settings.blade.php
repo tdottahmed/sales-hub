@@ -127,12 +127,6 @@
                     </div>
                     <!-- end col -->
                 </div>
-
-                <div class="form-check form-switch form-switch-md mb-3 mt-4">
-                    <input type="checkbox" class="form-check-input" id="sidebarUserProfile">
-                    <label class="form-check-label" for="sidebarUserProfile">Sidebar User Profile Avatar</label>
-                </div>
-
                 <h6 class="mt-4 mb-0 fw-semibold text-uppercase">Theme</h6>
                 <p class="text-muted">Choose your suitable Theme.</p>
 

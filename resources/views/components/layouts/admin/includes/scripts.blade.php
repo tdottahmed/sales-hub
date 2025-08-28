@@ -6,9 +6,6 @@
 <script src="/assets/admin/js/pages/plugins/lord-icon-2.1.0.js"></script>
 <script src="/assets/admin/js/plugins.js"></script>
 
-<!--jquery cdn-->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"
-    integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
 
 <!-- apexcharts -->
 <script src="/assets/admin/libs/apexcharts/apexcharts.min.js"></script>
@@ -26,5 +23,11 @@
 <!-- App js -->
 <script src="/assets/admin/js/app.js"></script>
 <script src="/assets/admin/js/pages/password-addon.init.js"></script>
-<script src="/assets/frontend/js/jquery.min.js"></script>
+<script src="/assets/admin/js/jquery.min.js"></script>
 <script src="/assets/admin/libs/sweetalert2/sweetalert2.min.js"></script>
+<script src="/assets/admin/libs/select2/js/select2.min.js"></script>
+<script src="{{ asset('/assets/admin/libs/tinymce/tinymce.min.js') }}"></script>
+
+<x-data-display.sweet-alert />
+
+@stack('scripts')

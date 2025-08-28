@@ -57,6 +57,18 @@
             <div class="page-content">
                 <div class="container-fluid">
                     <x-data-display.modal id="ajaxModal" />
+                    @if ($errors->any())
+                        <x-data-display.card>
+                            <x-slot name="header">{{ __('Error') }}</x-slot>
+                            <div class="alert alert-danger">
+                                <ul>
+                                    @foreach ($errors->all() as $error)
+                                        <li>{{ $error }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        </x-data-display.card>
+                    @endif
                     {{ $slot }}
 
                 </div>
@@ -83,12 +95,8 @@
             </div>
         </div>
     </div>
-
     <x-layouts.admin.includes.theme-settings />
     <x-layouts.admin.includes.scripts />
-    <x-data-display.sweet-alert />
-
-    @stack('scripts')
 </body>
 
 </html>
