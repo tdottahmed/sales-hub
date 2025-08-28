@@ -26,9 +26,7 @@ class RoleRequest extends FormRequest
         ];
     }
 
-    /**
-     * Handle the role creation or update.
-     */
+    
     public function handle(Role $role = null)
     {
         if ($role) {
