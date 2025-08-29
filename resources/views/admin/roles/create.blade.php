@@ -14,4 +14,5 @@
                <x-permission-accordion :permissionGroups="$permissionGroups" />
            </x-data-entry.form>
        </x-data-display.card>
+
    </x-layouts.admin.master>

@@ -1,35 +1,5 @@
 <table id="scroll-horizontal" class="table nowrap align-middle" style="width:100%">
-    @isset($header)
-        <thead class="bg-indigo-600">
-            <tr>
-                <th scope="col" style="width: 10px;">
-                    <div class="form-check">
-                        <input class="form-check-input fs-15" type="checkbox" id="checkAll" value="option">
-                    </div>
-                </th>
-                {{ $header }}
-            </tr>
-        </thead>
-    @endisset
-
-    @isset($body)
-        <tbody>
-            <tr>
-                <td scope="row">
-                    <div class="form-check">
-                        <input class="form-check-input fs-15" type="checkbox" name="checkAll" value="option1">
-                    </div>
-                </td>
-                {{ $body }}
-            </tr>
-        </tbody>
-    @endisset
-
-    @isset($footer)
-        <tfoot>
-            {{ $footer }}
-        </tfoot>
-    @endisset
+    {{$slot}}
 </table>
 
 @push('styles')

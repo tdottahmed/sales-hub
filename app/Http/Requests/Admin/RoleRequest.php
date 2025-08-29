@@ -26,7 +26,7 @@ class RoleRequest extends FormRequest
         ];
     }
 
-    
+
     public function handle(Role $role = null)
     {
         if ($role) {

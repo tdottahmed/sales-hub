@@ -21,6 +21,6 @@ class CustomTable extends Component
      */
     public function render(): View|Closure|string
     {
-        return view('components.data-display.custom-table');
+        return view('components.data-display.table');
     }
 }

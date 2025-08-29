@@ -97,6 +97,7 @@
     </div>
     <x-layouts.admin.includes.theme-settings />
     <x-layouts.admin.includes.scripts />
+
 </body>
 
 </html>

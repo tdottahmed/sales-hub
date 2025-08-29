@@ -1,5 +1,5 @@
 <meta charset="utf-8" />
-<title>{{ getSetting('app_name') . ' | ' . last(request()->segments()) }}</title>
+<title>{{ getSetting('app_name') . ' | ' . (request()->segments() ? Str::title(last(request()->segments())) : 'Welcome') }}</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta content="Premium Multipurpose Admin & Dashboard Template" name="description" />
 <meta content="Themesbrand" name="author" />
