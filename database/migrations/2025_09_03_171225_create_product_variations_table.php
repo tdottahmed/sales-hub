@@ -13,6 +13,16 @@ return new class extends Migration
     {
         Schema::create('product_variations', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('product_id')->constrained('products')->cascadeOnDelete();
+            $table->unsignedBigInteger('external_id'); // supplier variation id
+            $table->string('name');
+            $table->decimal('min_face_value', 10, 2)->nullable();
+            $table->decimal('max_face_value', 10, 2)->nullable();
+            $table->integer('count')->nullable();
+            $table->decimal('min_price', 10, 2);
+            $table->decimal('max_price', 10, 2);
+            $table->string('currency_code', 5);
+            $table->timestamp('modified_date')->nullable();
             $table->timestamps();
         });
     }
