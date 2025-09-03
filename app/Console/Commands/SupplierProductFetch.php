@@ -12,7 +12,7 @@ class SupplierProductFetch extends Command
      *
      * @var string
      */
-    protected $signature = 'fetch:supplier-products';
+    protected $signature = 'fetch:supplier-products {--force : Force fetch products without confirmation}';
 
     /**
      * The console command description.
@@ -26,8 +26,22 @@ class SupplierProductFetch extends Command
      */
     public function handle(FetchSupplierProduct $fetchSupplierProduct)
     {
-            $fetchSupplierProduct->fetch();
+        try {
+            if (!$this->option('force') && !$this->confirm('Do you wish to fetch supplier products?')) {
+                $this->info('Command cancelled.');
+                return;
+            }
+
+            $this->info('Fetching supplier products...');
+            $products = $fetchSupplierProduct->fetch();
+
+            $this->info('Inserting products...');
             $fetchSupplierProduct->insert();
-            return $this->info('Supplier products fetched and inserted successfully.');
+
+            $this->info('Supplier products fetched and inserted successfully.');
+        } catch (\Exception $e) {
+            $this->error('Error: '.$e->getMessage());
+            return 1;
+        }
     }
 }
