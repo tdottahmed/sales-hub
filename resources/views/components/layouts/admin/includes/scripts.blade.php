@@ -27,6 +27,18 @@
 <script src="/assets/admin/libs/sweetalert2/sweetalert2.min.js"></script>
 <script src="/assets/admin/libs/select2/js/select2.min.js"></script>
 <script src="{{ asset('/assets/admin/libs/tinymce/tinymce.min.js') }}"></script>
+<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.2.9/js/dataTables.responsive.min.js"></script>
+<script>
+    function initializeTables() {
+        new DataTable("#example"),
+            new DataTable("#scroll-horizontal")
+    }
+    document.addEventListener("DOMContentLoaded", function() {
+        initializeTables();
+    });
+</script>
 
 <x-data-display.sweet-alert />
 

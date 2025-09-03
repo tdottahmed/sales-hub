@@ -49,4 +49,9 @@ class ApplicationSetupController extends Controller
             return back()->with('error', $e->getMessage())->withInput();
         }
     }
+
+    public function setupApi()
+    {
+        return view('admin.application-setup.setup-api');
+    }
 }
