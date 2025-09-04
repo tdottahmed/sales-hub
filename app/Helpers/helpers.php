@@ -90,17 +90,108 @@ if (!function_exists('getSetting')) {
     }
 }
 
-if (!function_exists('overWriteEnvFile')) {
-    function overWriteEnvFile($type, $val)
+if (!function_exists('env_format_value')) {
+    /**
+     * Format a value for .env line.
+     * - Keeps null (unquoted) if the submitted value is "null" (case-insensitive).
+     * - Wraps in double quotes when value contains spaces or special chars.
+     * - Escapes backslashes and quotes inside quoted values.
+     */
+    function env_format_value(?string $value): string
     {
-        $path = base_path('.env');
-        if (file_exists($path)) {
-            $val = '"' . trim($val) . '"';
-            if (is_numeric(strpos(file_get_contents($path), $type)) && strpos(file_get_contents($path), $type) >= 0) {
-                file_put_contents($path, str_replace($type . '="' . env($type) . '"', $type . '=' . $val, file_get_contents($path)));
-            } else {
-                file_put_contents($path, file_get_contents($path) . "\r\n" . $type . '=' . $val);
-            }
+        if ($value === null) {
+            return 'null';
         }
+
+        $trim = trim($value);
+
+        if ($trim === '') {
+            // Prefer empty string as ""
+            return '""';
+        }
+
+        if (strtolower($trim) === 'null') {
+            return 'null';
+        }
+
+        // Quote if it contains spaces or characters that commonly break parsing
+        if (preg_match('/\s|["\'#]/', $trim)) {
+            $escaped = addcslashes($trim, "\\\"");
+            return "\"{$escaped}\"";
+        }
+
+        return $trim;
     }
 }
+
+if (!function_exists('setEnvValues')) {
+    /**
+     * Batch update .env values in one pass.
+     * Accepts an associative array: ['KEY' => 'value', ...]
+     * Returns true on success, false otherwise.
+     */
+    function setEnvValues(array $pairs): bool
+    {
+        $path = base_path('.env');
+        if (!file_exists($path)) {
+            return false;
+        }
+
+        $content = file_get_contents($path);
+        if ($content === false) {
+            return false;
+        }
+
+        // Detect original line endings to preserve style
+        $eol = str_contains($content, "\r\n") ? "\r\n" : "\n";
+        $lines = preg_split("/(\r\n|\n|\r)/", $content);
+
+        // Track which keys we updated
+        $keys = array_keys($pairs);
+        $updated = array_fill_keys($keys, false);
+
+        foreach ($lines as &$line) {
+            // Skip comments and blank lines
+            if (preg_match('/^\s*#/', $line) || trim($line) === '') {
+                continue;
+            }
+
+            // Match KEY=VALUE (allowing spaces around '=')
+            if (preg_match('/^\s*([A-Z0-9_]+)\s*=\s*(.*)$/', $line, $m)) {
+                $key = $m[1];
+                if (array_key_exists($key, $pairs)) {
+                    $line = $key . '=' . env_format_value($pairs[$key]);
+                    $updated[$key] = true;
+                }
+            }
+        }
+        unset($line);
+
+        // Append any keys that were not found
+        foreach ($updated as $key => $wasUpdated) {
+            if (!$wasUpdated) {
+                $lines[] = $key . '=' . env_format_value($pairs[$key]);
+            }
+        }
+
+        $new = implode($eol, $lines);
+        // Ensure ending newline
+        if (!str_ends_with($new, $eol)) {
+            $new .= $eol;
+        }
+
+        return file_put_contents($path, $new) !== false;
+    }
+}
+
+if (!function_exists('overWriteEnvFile')) {
+    /**
+     * Backward-compatible single-key updater.
+     * Prefer using setEnvValues([...]) to update multiple keys at once.
+     */
+    function overWriteEnvFile(string $type, ?string $val): bool
+    {
+        return setEnvValues([$type => $val]);
+    }
+}
+

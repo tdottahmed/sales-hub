@@ -40,10 +40,9 @@
                         'users.index' => 'Users',
                     ]" />
                 <x-layouts.admin.partials.sidebar-menu-item route="applicationSetup.index" icon="ri-settings-3-line"
-                    label="Application Setup" />
+                    label="Settings" />
 
-                <x-layouts.admin.partials.sidebar-menu-item route="api-setup.index" icon="ri-settings-2-line"
-                                                            label="Api credentials Setup" />
+
             </ul>
         </div>
     </div>
