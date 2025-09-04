@@ -16,4 +16,5 @@ Route::group(['middleware' => ['role:super-admin|admin|staff|user']], function (
     Route::get('settings/organization', [ApplicationSetupController::class, 'index'])->name('applicationSetup.index');
     Route::post('settings/organization', [ApplicationSetupController::class, 'update'])->name('applicationSetup.update');
     Route::post('settings/update-env', [ApplicationSetupController::class, 'updateEnv'])->name('settings.updateEnv');
+
 });

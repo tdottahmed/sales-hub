@@ -14,6 +14,10 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile/update-image', [ProfileController::class, 'updateImage'])->name('profile.update-image');
 });
 
+Route::get('/test', function () {
+    $currencyConversion = new \App\Services\CurrencyConversionService();
+    dd($currencyConversion->convertToEuro(100, 'BDT'));
+});
 require __DIR__ . '/auth.php';
 require __DIR__ . '/admin.php';
 require __DIR__ . '/frontend.php';
