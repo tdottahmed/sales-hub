@@ -50,6 +50,26 @@ class ApplicationSetupController extends Controller
         }
     }
 
+    public function updateProfitMargin(Request $request)
+    {
+        $request->validate([
+            'profit_margin' => ['required', 'numeric', 'min:0'],
+        ]);
+
+        try {
+            ApplicationSetup::updateOrCreate(
+                ['type' => 'profit_margin'],
+                ['value' => $request->profit_margin]
+            );
+
+            return redirect()->route('applicationSetup.index')
+                ->with('success', 'Profit Margin Updated Successfully');
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage())->withInput();
+        }
+    }
+
+
     public function setupApi()
     {
         return view('admin.application-setup.setup-api');
@@ -72,7 +92,7 @@ class ApplicationSetupController extends Controller
         ];
 
         $payload = collect($request->only($allowedKeys))
-            ->filter(fn ($v) => $v !== null)
+            ->filter(fn($v) => $v !== null)
             ->all();
 
         $rules = [
@@ -105,5 +125,4 @@ class ApplicationSetupController extends Controller
 
         return back()->with('success', __('Environment variables updated successfully.'));
     }
-
 }
