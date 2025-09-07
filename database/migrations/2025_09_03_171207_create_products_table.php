@@ -20,7 +20,7 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->text('disclaimer')->nullable();
             $table->text('redemption_instructions')->nullable();
-            $table->string('terms')->nullable();
+            $table->longText('terms')->nullable();
             $table->string('logo_url')->nullable();
             $table->timestamp('modified_date')->nullable();
             $table->timestamps();
