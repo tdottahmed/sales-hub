@@ -14,7 +14,7 @@ use Throwable;
 
 class SyncSupplierProducts extends Command
 {
-    protected $signature = 'sync:supplier-products {--chunk=100}';
+    protected $signature = 'sync:supplier-products {--chunk=1}';
     protected $description = 'Sync supplier products into structured products/variations/categories';
 
     public function handle()
@@ -35,7 +35,6 @@ class SyncSupplierProducts extends Command
 
         SupplierProduct::where('is_processed', false)
             ->orderBy('id')
-            ->take(10)
             ->chunkById($chunk, function ($products) use (&$countSynced, &$countFailed, $currencyService) {
                 foreach ($products as $supplierProduct) {
                     Log::withContext([
@@ -44,108 +43,111 @@ class SyncSupplierProducts extends Command
                     ]);
                     Log::info('Processing supplier product');
 
-//                    try {
-                        $raw = $supplierProduct->product_data;
-                        if (empty($raw)) {
-                            Log::warning("Empty product_data; skipping");
-                            continue;
-                        }
+                    try {
+                    $raw = $supplierProduct->product_data;
+                    if (empty($raw)) {
+                        Log::warning("Empty product_data; skipping");
+                        continue;
+                    }
 
-                        $data = json_decode($raw, true);
-                        if (!is_array($data)) {
-                            Log::warning("Invalid product_data JSON; skipping");
-                            continue;
-                        }
+                    $data = json_decode($raw, true);
 
-                        // Create/Update Product
-                        $basePriceEur = $this->computeBasePriceFromVariations($data, $currencyService);
-                        Log::info('modified Date: '.($data['modifiedDate'] ?? 'N/A'));
+                    if (!is_array($data)) {
+                        Log::warning("Invalid product_data JSON; skipping");
+                        continue;
+                    }
 
-                        $product = Product::updateOrCreate(
-                            ['internal_id' => $supplierProduct->internal_id],
-                            [
-                                'name' => $data['name'] ?? 'Unknown',
-                                'description' => $data['description'] ?? null,
-                                'country_code' => $data['countryCode'] ?? null,
-                                'currency_code' => $data['currencyCode'] ?? null,
-                                'disclaimer' => $data['disclaimer'] ?? null,
-                                'terms' => $data['terms'] ?? null,
-                                'redemption_instructions' => $data['redemptionInstructions'] ?? null,
-                                'logo_url' => $data['logoUrl'] ?? null,
-                                'modified_date' => isset($data['modifiedDate'])
-                                    ? date('Y-m-d H:i:s', strtotime($data['modifiedDate']))
-                                    : null,
-                            ]
-                        );
+                    // Create/Update Product
+                    $basePriceEur = $this->computeBasePriceFromVariations($data, $currencyService);
+                    Log::info('modified Date: '.($data['modifiedDate'] ?? 'N/A'));
 
-                        // Categories
-                        $categoryIds = [];
-                        $categories = $data['categories'] ?? [];
-                        if (is_array($categories)) {
-                            foreach ($categories as $cat) {
-                                $catName = $cat['name'] ?? null;
-                                if (!$catName) {
-                                    continue;
-                                }
-                                $category = Category::where('name', $catName)->first();
-                                if (!$category) {
-                                    $category = new Category();
-                                    $category->name = $catName;
-                                    $category->save();
-                                }
-                                $categoryIds[] = $category->id;
+                    $product = Product::updateOrCreate(
+                        ['internal_id' => $supplierProduct->internal_id],
+                        [
+                            'name' => $data['name'] ?? 'Unknown',
+                            'description' => $data['description'] ?? null,
+                            'country_code' => $data['countryCode'] ?? null,
+                            'currency_code' => $data['currencyCode'] ?? null,
+                            'disclaimer' => $data['disclaimer'] ?? null,
+                            'terms' => $data['terms'] ?? null,
+                            'redemption_instructions' => $data['redemptionInstructions'] ?? null,
+                            'logo_url' => $data['logoUrl'] ?? null,
+                            'modified_date' => isset($data['modifiedDate'])
+                                ? date('Y-m-d H:i:s', strtotime($data['modifiedDate']))
+                                : null,
+                        ]
+                    );
+
+                    // Categories
+                    $categoryIds = [];
+                    $categories = $data['categories'] ?? [];
+                    if (is_array($categories)) {
+                        foreach ($categories as $cat) {
+                            $catName = $cat['name'] ?? null;
+                            if (!$catName) {
+                                continue;
                             }
-                        }
-                        if (!empty($categoryIds)) {
-                            $product->categories()->syncWithoutDetaching($categoryIds);
-                        }
-
-                        // Variations
-                        $variations = $data['products'] ?? [];
-                        if (is_array($variations)) {
-                            foreach ($variations as $var) {
-                                $sku = isset($var['id']) ? (string) $var['id'] : null;
-                                if (!$sku) {
-                                    Log::warning("Missing variation id (SKU); skipping variation");
-                                    continue;
-                                }
-
-                                $varName = $var['name'] ?? "Variant {$sku}";
-                                $priceEur = $this->resolveVariationPriceToEur(
-                                    $var,
-                                    $data['currencyCode'] ?? null,
-                                    $currencyService
-                                );
-
-                                ProductVariation::updateOrCreate(
-                                    ['product_id' => $product->id],
-                                    [
-                                        'name' => $varName,
-                                        'price' => $priceEur,
-                                    ]
-                                );
+                            $category = Category::where('name', $catName)->first();
+                            if (!$category) {
+                                $category = new Category();
+                                $category->name = $catName;
+                                $category->save();
                             }
+                            $categoryIds[] = $category->id;
                         }
+                    }
+                    if (!empty($categoryIds)) {
+                        $product->categories()->syncWithoutDetaching($categoryIds);
+                    }
 
-                        // Mark SupplierProduct as synced
-                        $supplierProduct->update([
-                            'is_synced' => true,
-                            'synced_at' => now(),
+                    // Variations
+                    $variations = $data['products'] ?? [];
+                    if (is_array($variations)) {
+                        foreach ($variations as $variation) {
+                            $varName = $variation['name'] ?? "Variant:".$variation['name'];
+                            $prices = $this->resolveVariationPriceToEur(
+                                $variation,
+                                $data['currencyCode'] ?? null,
+                                $currencyService
+                            );
+
+                            ProductVariation::updateOrCreate(
+                                ['external_id' => $variation['id']],
+                                [
+                                    'product_id' => $product->id,
+                                    'uuid' => $variation['_id'] ?? null,
+                                    'name' => $varName,
+                                    'currency_code' => $data['currencyCode'] ?? null,
+                                    'min_price' => $prices['min'] ?? null,
+                                    'max_price' => $prices['max'] ?? null,
+                                    'min_face_value' => $variation['minFaceValue']?? null,
+                                    'max_face_value' => $variation['maxFaceValue'] ?? null,
+                                    'count'=>count($variations),
+                                    'modified_date'=>(isset($data['modifiedDate']))?date('Y-m-d H:i:s', strtotime($data['modifiedDate'])):null,
+                                ]
+                            );
+                        }
+                    }
+
+                    // Mark SupplierProduct as synced
+                    $supplierProduct->update([
+                        'is_processed' => true,
+                        'processed_at' => now(),
+                    ]);
+
+                    $countSynced++;
+                    Log::info('Supplier product synced successfully');
+                    } catch (Throwable $e) {
+                        $countFailed++;
+                        Log::error('Unhandled exception during command sync', [
+                            'message' => $e->getMessage(),
+                            'class' => get_class($e),
+                            'code' => $e->getCode(),
+                            'file' => $e->getFile(),
+                            'line' => $e->getLine(),
+                            'trace' => $e->getTraceAsString(),
                         ]);
-
-                        $countSynced++;
-                        Log::info('Supplier product synced successfully');
-//                    } catch (Throwable $e) {
-//                        $countFailed++;
-//                        Log::error('Unhandled exception during command sync', [
-//                            'message' => $e->getMessage(),
-//                            'class' => get_class($e),
-//                            'code' => $e->getCode(),
-//                            'file' => $e->getFile(),
-//                            'line' => $e->getLine(),
-//                            'trace' => $e->getTraceAsString(),
-//                        ]);
-//                    }
+                    }
                 }
             });
 
@@ -161,13 +163,13 @@ class SyncSupplierProducts extends Command
 
         $minPrices = [];
         foreach ($variations as $var) {
-            $price = $this->resolveVariationPriceToEur(
+            $prices = $this->resolveVariationPriceToEur(
                 $var,
                 $data['currencyCode'] ?? null,
                 $currencyService
             );
-            if ($price !== null) {
-                $minPrices[] = $price;
+            if ($prices['min'] !== null) {
+                $minPrices[] = $prices['min'];
             }
         }
 
@@ -178,33 +180,39 @@ class SyncSupplierProducts extends Command
         array $var,
         ?string $fallbackCurrency,
         CurrencyConversionService $currencyService
-    ): ?float {
-        $amount = null;
+    ): array {
+        $minAmount = null;
+        $maxAmount = null;
         $currency = null;
 
         if (isset($var['price']) && is_array($var['price'])) {
-            $amount = $var['price']['min'] ?? $var['price']['max'] ?? null;
+            $minAmount = $var['price']['min'] ?? null;
+            $maxAmount = $var['price']['max'] ?? null;
             $currency = $var['price']['currencyCode'] ?? null;
         }
 
-        if ($amount === null) {
-            $amount = $var['minFaceValue'] ?? $var['maxFaceValue'] ?? null;
+        if ($minAmount === null && $maxAmount === null) {
+            $minAmount = $var['minFaceValue'] ?? null;
+            $maxAmount = $var['maxFaceValue'] ?? null;
             $currency = $currency ?? $fallbackCurrency;
         }
 
-        if ($amount === null || !$currency) {
-            return null;
+        if (($minAmount === null && $maxAmount === null) || !$currency) {
+            return ['min' => null, 'max' => null];
         }
 
         try {
-            return $currencyService->convertToEuro((float) $amount, (string) $currency);
+            $minPrice = $minAmount ? $currencyService->convertToEuro((float) $minAmount, (string) $currency) : null;
+            $maxPrice = $maxAmount ? $currencyService->convertToEuro((float) $maxAmount, (string) $currency) : null;
+            return ['min' => $minPrice, 'max' => $maxPrice];
         } catch (Throwable $e) {
             Log::warning('Currency conversion failed', [
-                'amount' => $amount,
+                'min_amount' => $minAmount,
+                'max_amount' => $maxAmount,
                 'currency' => $currency,
                 'error' => $e->getMessage(),
             ]);
-            return null;
+            return ['min' => null, 'max' => null];
         }
     }
 }

@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('product_id')->constrained('products')->cascadeOnDelete();
             $table->unsignedBigInteger('external_id'); // supplier variation id
+            $table->uuid('uuid')->unique();
             $table->string('name');
             $table->decimal('min_face_value', 10, 2)->nullable();
             $table->decimal('max_face_value', 10, 2)->nullable();
