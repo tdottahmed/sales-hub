@@ -130,6 +130,14 @@
                         value="{{ config('credentials.supplier.api_key') }}"
                         required
                     />
+                    <x-data-entry.input
+                        type="text"
+                        name="SELLER_API_KEY"
+                        label="{{ __('Seller API Key') }}"
+                        placeholder="Your Seller API key"
+                        value="{{ config('credentials.seller.api_key') }}"
+                        required
+                    />
 
                     <div class="mt-3 d-flex gap-2">
                         <button type="submit" class="btn btn-primary">

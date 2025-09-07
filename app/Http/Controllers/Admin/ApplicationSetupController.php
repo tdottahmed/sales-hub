@@ -68,6 +68,7 @@ class ApplicationSetupController extends Controller
             'MAIL_ENCRYPTION',
             'MAIL_FROM_ADDRESS',
             'MAIL_FROM_NAME',
+            'SELLER_API_KEY',
         ];
 
         $payload = collect($request->only($allowedKeys))
@@ -77,6 +78,7 @@ class ApplicationSetupController extends Controller
         $rules = [
             'SUPPLIER_BASE_URL' => ['sometimes', 'url'],
             'SUPPLIER_API_KEY' => ['sometimes', 'string'],
+            'SELLER_API_KEY' => ['sometimes', 'string'],
             'MAIL_MAILER' => ['sometimes', 'string'],
             'MAIL_HOST' => ['sometimes', 'string'],
             'MAIL_PORT' => ['sometimes', 'integer', 'between:1,65535'],
