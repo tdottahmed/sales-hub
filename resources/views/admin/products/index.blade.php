@@ -27,8 +27,8 @@
                         <td>{{ Str::limit($product->description, 50) }}</td>
                         <x-data-display.table-actions>
                             <li>
-                                <a href="#" class="dropdown-item">
-                                    <i class="ri-edit-box-line"></i> Edit
+                                <a href="{{route('supplierProducts.show', $product->id)}}" class="dropdown-item">
+                                    <i class="ri-eye-2-line"></i> Details
                                 </a>
                             </li>
                             <li>

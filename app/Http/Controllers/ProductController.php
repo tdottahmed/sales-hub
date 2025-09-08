@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\SupplierProduct;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller
@@ -11,5 +12,10 @@ class ProductController extends Controller
     {
         $products = Product::all();
         return view('admin.products.index', compact('products'));
+    }
+
+    public function show(Product $product)
+    {
+        return view('admin.products.show', compact('product'));
     }
 }
