@@ -20,5 +20,6 @@ Route::group(['middleware' => ['role:super-admin|admin|staff|user']], function (
 
 
     Route::get('supplier-products', [\App\Http\Controllers\ProductController::class, 'index'])->name('supplierProducts.index');
+    Route::get('supplier-products/show/{product}', [\App\Http\Controllers\ProductController::class, 'show'])->name('supplierProducts.show');
 
 });
