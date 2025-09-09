@@ -41,6 +41,8 @@
                     ]" />
                 <x-layouts.admin.partials.sidebar-menu-item route="supplierProducts.index" icon="ri ri-store-line"
                                                             label="Supplier Products" />
+                <x-layouts.admin.partials.sidebar-menu-item route="driffleProducts.index" icon="ri ri-store-line"
+                                                            label="Driffle Products" />
                 <x-layouts.admin.partials.sidebar-menu-item route="applicationSetup.index" icon="ri-settings-3-line"
                     label="Settings" />
 

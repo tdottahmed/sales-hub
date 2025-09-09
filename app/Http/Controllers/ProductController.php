@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\DriffleProduct;
 use App\Models\Product;
 use App\Models\SupplierProduct;
 use Illuminate\Http\Request;
@@ -17,5 +18,25 @@ class ProductController extends Controller
     public function show(Product $product)
     {
         return view('admin.products.show', compact('product'));
+    }
+
+    public function driffleProducts(Request $request)
+    {
+        $query = DriffleProduct::select('id', 'product_id', 'title', 'platform', 'regions');
+        if ($request->has('search')) {
+            $search = $request->get('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                    ->orWhere('platform', 'like', "%{$search}%")
+                    ->orWhere('regions', 'like', "%{$search}%");
+            });
+        }
+        $products = $query->paginate(20)->withQueryString();
+        return view('admin.products.driffle-products', compact('products'));
+    }
+
+    public function driffleProductsShow(DriffleProduct $driffleProduct)
+    {
+        dd($driffleProduct);
     }
 }
