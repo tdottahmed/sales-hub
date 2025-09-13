@@ -26,4 +26,6 @@ Route::group(['middleware' => ['role:super-admin|admin|staff|user']], function (
     Route::get('driffle-products', [ProductController::class, 'driffleProducts'])->name('driffleProducts.index');
     Route::get('driffle-products/show/{driffleProduct}', [ProductController::class, 'driffleProductsShow'])->name('driffleProducts.show');
 
+    Route::get('driffle/map-products', [ProductController::class, 'driffleMapProducts'])->name('driffleProducts.mapProducts');
+
 });

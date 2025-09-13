@@ -12,19 +12,68 @@ class MapProducts extends Command
     protected $signature = 'products:map';
     protected $description = 'Map supplier products with Driffle products';
 
+    // Add these class properties for better organization
+    protected $currencyCodes = ['PLN', 'EUR', 'USD', 'AED', 'GBP', 'AUD', 'ARS', 'BRL', 'CZK', 'DKK',
+        'CHF', 'CLP', 'COP', 'CNY', 'JPY', 'TRY', 'ZAR', 'MXN', 'NOK', 'SEK', 'NZD',
+        'INR', 'HKD', 'HUF', 'IDR', 'KRW', 'MYR', 'PHP', 'RON', 'RUB', 'SAR', 'SGD',
+        'THB', 'VND', 'BHD', 'KWD', 'OMR', 'PKR', 'LKR', 'EGP', 'QAR'];
+
+    protected $platformKeywords = [
+        'steam' => ['steam', 'pc'],
+        'playstation' => ['playstation', 'psn', 'ps4', 'ps5'],
+        'xbox' => ['xbox', 'xbox live', 'xbox game pass'],
+        'nintendo' => ['nintendo', 'switch', 'eshop'],
+        'google' => ['google play', 'google'],
+        'appstore' => ['appstore', 'itunes'],
+        'riot' => ['riot', 'league of legends', 'valorant'],
+        'roblox' => ['roblox'],
+        'spotify' => ['spotify'],
+        'netflix' => ['netflix'],
+        'origin' => ['origin', 'ea'],
+        'epic' => ['epic games'],
+        'battle.net' => ['battle.net', 'battlenet'],
+        'amazon' => ['amazon'],
+        'uber' => ['uber'],
+        'tiktok' => ['tiktok'],
+        'discord' => ['discord'],
+        'twitch' => ['twitch'],
+        'facebook' => ['facebook'],
+        'instagram' => ['instagram'],
+        'tinder' => ['tinder'],
+        'dazn' => ['dazn'],
+        'deezer' => ['deezer'],
+        'paramount' => ['paramount'],
+        'crunchyroll' => ['crunchyroll'],
+        'disney' => ['disney'],
+        'hbo' => ['hbo'],
+        'youtube' => ['youtube'],
+        'tiktok' => ['tiktok'],
+        'pubg' => ['pubg'],
+        'freefire' => ['free fire'],
+        'minecraft' => ['minecraft'],
+        'fortnite' => ['fortnite'],
+        'callofduty' => ['call of duty', 'cod'],
+        'ea' => ['ea sports', 'ea'],
+        'blizzard' => ['blizzard'],
+        'ubisoft' => ['ubisoft'],
+        'rockstar' => ['rockstar'],
+        'takeaway' => ['talabat', 'just eat', 'uber eats', 'foodpanda', 'deliveroo']
+    ];
+
     public function handle()
     {
         $this->info("Starting product mapping...");
 
         // Get all unmapped variations
-        $variations = ProductVariation::where('is_mapped', false)->pluck('name')->take(500)->implode(', ');
-        dd($variations);
+        $variations = ProductVariation::where('is_mapped', false)->get();
         $driffleProducts = DriffleProduct::all();
+
+        $matched = 0;
+        $unmatched = 0;
 
         foreach ($variations as $variation) {
             $bestMatch = null;
             $bestScore = 0;
-            $minScore = 80; // Minimum threshold for a match
 
             foreach ($driffleProducts as $driffle) {
                 $score = $this->calculateScore($variation, $driffle);
@@ -35,13 +84,11 @@ class MapProducts extends Command
                 }
             }
 
-            if ($bestMatch && $bestScore >= $minScore) {
-                $this->line("✅ Candidate: {$variation->name} <--> {$bestMatch->title} (score: $bestScore)");
+            if ($bestMatch && $bestScore >= 60) { // Lowered threshold
+                $this->line("✅ Match: {$variation->name} <--> {$bestMatch->title} (score: $bestScore)");
 
-                // Mark variation as mapped
                 $variation->update(['is_mapped' => true]);
 
-                // Insert mapping into similar_products table
                 DB::table('similar_products')->updateOrInsert(
                     [
                         'product_variation_id' => $variation->id,
@@ -53,12 +100,15 @@ class MapProducts extends Command
                         'updated_at' => now(),
                     ]
                 );
+
+                $matched++;
             } else {
-                $this->warn("❌ No match found: {$variation->name}");
+                $this->warn("❌ No match: {$variation->name}");
+                $unmatched++;
             }
         }
 
-        $this->info("Product mapping completed.");
+        $this->info("Product mapping completed. Matched: $matched, Unmatched: $unmatched");
     }
 
     /**
@@ -68,75 +118,85 @@ class MapProducts extends Command
     {
         $score = 0;
 
-        // 1. Brand/Title matching (most important)
-        $titleScore = $this->calculateTitleScore($variation->name, $driffle->title);
-        if ($titleScore === 0) {
-            return 0; // No point continuing if titles don't match at all
+        // Normalize both titles for comparison
+        $variationTitle = $this->normalizeTitle($variation->name);
+        $driffleTitle = $this->normalizeTitle($driffle->title);
+
+        // 1. Brand matching (most important)
+        $brandScore = $this->calculateBrandScore($variationTitle, $driffleTitle);
+        if ($brandScore < 20) {
+            return 0; // No match if brands don't match at all
         }
-        $score += $titleScore;
+        $score += $brandScore;
 
         // 2. Region matching
-        if (!empty($variation->country_code) && !empty($driffle->regionName)) {
-            if ($this->matchRegion($variation->country_code, $driffle->regionName)) {
-                $score += 30;
-            } else {
-                // Penalize region mismatch but don't completely reject
-                $score -= 20;
-            }
-        }
+        $regionScore = $this->calculateRegionScore($variation, $driffle);
+        $score += $regionScore;
 
-        // 3. Face value matching (if applicable)
-        $faceValueScore = $this->calculateFaceValueScore($variation, $driffle->title);
-        $score += $faceValueScore;
+        // 3. Value matching (face value, points, duration)
+        $valueScore = $this->calculateValueScore($variation, $driffleTitle);
+        $score += $valueScore;
 
-        // 4. Platform matching (if applicable)
-        $platformScore = $this->calculatePlatformScore($variation->name, $driffle->title);
+        // 4. Platform matching
+        $platformScore = $this->calculatePlatformScore($variationTitle, $driffleTitle);
         $score += $platformScore;
 
         return $score;
     }
 
     /**
-     * Calculate title similarity score
+     * Calculate brand similarity score
      */
-    private function calculateTitleScore($variationTitle, $driffleTitle)
+    private function calculateBrandScore($variationTitle, $driffleTitle)
     {
-        // Extract main brands from both titles
-        $variationBrand = $this->extractBrand($variationTitle);
-        $driffleBrand = $this->extractBrand($driffleTitle);
+        $score = 0;
 
-        // Check if brands match
+        // Extract primary brand names
+        $variationBrand = $this->extractPrimaryBrand($variationTitle);
+        $driffleBrand = $this->extractPrimaryBrand($driffleTitle);
+
         if (empty($variationBrand) || empty($driffleBrand)) {
             return 0;
         }
 
-        // Use Levenshtein distance for brand matching
+        // Exact match
+        if ($variationBrand === $driffleBrand) {
+            return 70;
+        }
+
+        // Partial match with Levenshtein distance
         $distance = levenshtein($variationBrand, $driffleBrand);
         $maxLength = max(strlen($variationBrand), strlen($driffleBrand));
 
-        if ($distance <= 2 || $maxLength <= 3 && $distance === 0) {
-            return 70; // Strong match
+        if ($distance <= 2) {
+            return 60;
         } elseif ($distance <= 4) {
-            return 50; // Moderate match
+            return 40;
         } elseif ($distance <= 6) {
-            return 30; // Weak match
+            return 20;
         }
 
-        return 0; // No match
+        // Check if one brand contains the other
+        if (strpos($driffleTitle, $variationBrand) !== false ||
+            strpos($variationTitle, $driffleBrand) !== false) {
+            return 30;
+        }
+
+        return 0;
     }
 
     /**
-     * Extract the main brand from a title
+     * Extract primary brand from title
      */
-    private function extractBrand($title)
+    private function extractPrimaryBrand($title)
     {
         $title = strtolower($title);
 
-        // Remove common non-brand words
-        $title = preg_replace('/\b(subscription|gift|card|voucher|digital|key|egift|pln|eur|usd|aed|gbp|aud|ars)\b/i', '', $title);
+        // Remove common non-brand words but keep important ones
+        $title = preg_replace('/\b(gift|card|voucher|digital|key|egift|subscription|recharge|access|points|coins|diamonds|tokens|bonus)\b/i', '', $title);
 
         // Remove values and currencies
-        $title = preg_replace('/\d+[\.,]?\d*\s*(month|months|year|years|pln|eur|usd|aed|gbp|aud|ars)?/i', '', $title);
+        $title = preg_replace('/\d+[\.,]?\d*\s*('.implode('|', $this->currencyCodes).')?/i', '', $title);
 
         // Remove content in parentheses
         $title = preg_replace('/\(.*?\)/', '', $title);
@@ -152,46 +212,157 @@ class MapProducts extends Command
     }
 
     /**
-     * Calculate face value score
+     * Calculate region compatibility score
      */
-    private function calculateFaceValueScore($variation, $driffleTitle)
+    private function calculateRegionScore($variation, $driffle)
     {
-        // Extract face value from Driffle title
-        $driffleFaceValue = $this->extractFaceValue($driffleTitle);
-
-        // If no face value in Driffle title, skip this check
-        if ($driffleFaceValue === null) {
+        if (empty($variation->country_code) || empty($driffle->regionName)) {
             return 0;
         }
 
-        // If variation has face value constraints, check them
-        if ($variation->min_face_value !== null && $variation->max_face_value !== null) {
-            if ($driffleFaceValue >= $variation->min_face_value &&
-                $driffleFaceValue <= $variation->max_face_value) {
-                return 50; // Strong match for face value
-            } else {
-                return -50; // Penalize for face value mismatch
+        $variationRegion = strtoupper($variation->country_code);
+        $driffleRegion = strtolower(trim($driffle->regionName));
+
+        $regionMap = [
+            'AE' => ['united arab emirates', 'uae', 'ae'],
+            'AT' => ['austria', 'at'],
+            'AU' => ['australia', 'au'],
+            'AR' => ['argentina', 'ar', 'ars'],
+            'PL' => ['poland', 'pl', 'pln'],
+            'DE' => ['germany', 'de'],
+            'FR' => ['france', 'fr'],
+            'US' => ['united states', 'usa', 'america', 'us'],
+            'GB' => ['united kingdom', 'uk', 'england', 'gb'],
+            'BE' => ['belgium', 'be'],
+            'BH' => ['bahrain', 'bh'],
+            'BR' => ['brazil', 'br', 'brl'],
+            'CA' => ['canada', 'ca', 'cad'],
+            'CH' => ['switzerland', 'ch', 'chf'],
+            'CL' => ['chile', 'cl', 'clp'],
+            'CN' => ['china', 'cn', 'cny'],
+            'CO' => ['colombia', 'co', 'cop'],
+            'CZ' => ['czech republic', 'czech', 'cz', 'czk'],
+            'DK' => ['denmark', 'dk', 'dkk'],
+            'EG' => ['egypt', 'eg'],
+            'ES' => ['spain', 'es'],
+            'FI' => ['finland', 'fi'],
+            'GR' => ['greece', 'gr'],
+            'HK' => ['hong kong', 'hk'],
+            'HU' => ['hungary', 'hu'],
+            'ID' => ['indonesia', 'id'],
+            'IE' => ['ireland', 'ie'],
+            'IL' => ['israel', 'il'],
+            'IN' => ['india', 'in'],
+            'IT' => ['italy', 'it'],
+            'JP' => ['japan', 'jp', 'jpy'],
+            'KR' => ['korea', 'kr'],
+            'KW' => ['kuwait', 'kw'],
+            'MX' => ['mexico', 'mx', 'mxn'],
+            'MY' => ['malaysia', 'my'],
+            'NL' => ['netherlands', 'nl'],
+            'NO' => ['norway', 'no', 'nok'],
+            'NZ' => ['new zealand', 'nz', 'nzd'],
+            'PH' => ['philippines', 'ph'],
+            'PT' => ['portugal', 'pt'],
+            'QA' => ['qatar', 'qa'],
+            'RU' => ['russia', 'ru'],
+            'SA' => ['saudi arabia', 'sa'],
+            'SE' => ['sweden', 'se', 'sek'],
+            'SG' => ['singapore', 'sg'],
+            'TH' => ['thailand', 'th'],
+            'TR' => ['turkey', 'tr', 'try'],
+            'TW' => ['taiwan', 'tw'],
+            'ZA' => ['south africa', 'za', 'zar'],
+            'GLOBAL' => ['global', 'world', 'international', 'worldwide']
+        ];
+
+        // Check for exact region match
+        if (isset($regionMap[$variationRegion])) {
+            foreach ($regionMap[$variationRegion] as $pattern) {
+                if (strpos($driffleRegion, $pattern) !== false) {
+                    return 30; // Strong region match
+                }
             }
+        }
+
+        // Check for global products
+        foreach ($regionMap['GLOBAL'] as $pattern) {
+            if (strpos($driffleRegion, $pattern) !== false) {
+                return 20; // Global product match
+            }
+        }
+
+        return -10; // Region mismatch penalty
+    }
+
+    /**
+     * Calculate value compatibility score
+     */
+    private function calculateValueScore($variation, $driffleTitle)
+    {
+        $score = 0;
+
+        // Extract values from both titles
+        $variationValue = $this->extractValue($variation->name);
+        $driffleValue = $this->extractValue($driffleTitle);
+
+        // If no values in either, return neutral score
+        if ($variationValue === null && $driffleValue === null) {
+            return 0;
+        }
+
+        // If variation has value constraints, check them
+        if ($variation->min_face_value !== null && $variation->max_face_value !== null) {
+            if ($driffleValue !== null &&
+                $driffleValue >= $variation->min_face_value &&
+                $driffleValue <= $variation->max_face_value) {
+                return 50; // Strong value match
+            } else {
+                return -30; // Value mismatch penalty
+            }
+        }
+
+        // If only Driffle has a value, check if it's reasonable
+        if ($driffleValue !== null && $variationValue === null) {
+            // Many gift cards have values between 5-500, so this is likely acceptable
+            if ($driffleValue >= 5 && $driffleValue <= 500) {
+                return 10;
+            }
+        }
+
+        // If both have values and they match exactly
+        if ($variationValue !== null && $driffleValue !== null && $variationValue == $driffleValue) {
+            return 40;
         }
 
         return 0;
     }
 
     /**
-     * Extract face value from title
+     * Extract numeric value from title
      */
-    private function extractFaceValue($title)
+    private function extractValue($title)
     {
-        // Look for patterns like "100 AED", "50 USD", etc.
-        if (preg_match('/\b(\d+)\s*(PLN|EUR|USD|AED|GBP|AUD|ARS)\b/i', $title, $matches)) {
+        // Look for currency values like "100 AED", "50 USD", etc.
+        if (preg_match('/\b(\d+)\s*('.implode('|', $this->currencyCodes).')\b/i', $title, $matches)) {
+            return (int)$matches[1];
+        }
+
+        // Look for points patterns like "2800 FC POINTS", "75000 VC", etc.
+        if (preg_match('/\b(\d+)\s*(FC POINTS|VC|points|tokens|diamonds|coins|credits|vp)\b/i', $title, $matches)) {
+            return (int)$matches[1];
+        }
+
+        // Look for duration patterns like "12 Months", "6M", etc.
+        if (preg_match('/\b(\d+)\s*(month|months|m|year|years|y)\b/i', $title, $matches)) {
             return (int)$matches[1];
         }
 
         // Look for standalone numbers that likely represent values
-        if (preg_match('/\b(\d{2,4})\b/', $title, $matches)) {
+        if (preg_match('/\b(\d{2,5})\b/', $title, $matches)) {
             $value = (int)$matches[1];
-            // Only return if it's a reasonable gift card value
-            if ($value >= 5 && $value <= 500) {
+            // Only return if it's a reasonable value
+            if ($value >= 5 && $value <= 10000) {
                 return $value;
             }
         }
@@ -204,22 +375,11 @@ class MapProducts extends Command
      */
     private function calculatePlatformScore($variationTitle, $driffleTitle)
     {
-        $platforms = [
-            'steam' => ['steam', 'pc'],
-            'playstation' => ['playstation', 'psn', 'ps4', 'ps5'],
-            'xbox' => ['xbox', 'xbox live'],
-            'nintendo' => ['nintendo', 'switch'],
-            'google' => ['google play', 'google'],
-            'appstore' => ['appstore', 'itunes'],
-            'riot' => ['riot', 'league of legends'],
-            'roblox' => ['roblox']
-        ];
-
         $variationPlatform = null;
         $drifflePlatform = null;
 
         // Detect platform in variation title
-        foreach ($platforms as $platform => $keywords) {
+        foreach ($this->platformKeywords as $platform => $keywords) {
             foreach ($keywords as $keyword) {
                 if (stripos($variationTitle, $keyword) !== false) {
                     $variationPlatform = $platform;
@@ -229,7 +389,7 @@ class MapProducts extends Command
         }
 
         // Detect platform in Driffle title
-        foreach ($platforms as $platform => $keywords) {
+        foreach ($this->platformKeywords as $platform => $keywords) {
             foreach ($keywords as $keyword) {
                 if (stripos($driffleTitle, $keyword) !== false) {
                     $drifflePlatform = $platform;
@@ -250,280 +410,29 @@ class MapProducts extends Command
 
         // If platforms are different
         if ($variationPlatform && $drifflePlatform && $variationPlatform !== $drifflePlatform) {
-            return -30;
+            return -15;
         }
 
         return 0;
     }
 
-    private function matchRegion($countryCode, $regionText)
+    /**
+     * Normalize title for better comparison
+     */
+    private function normalizeTitle($title)
     {
-        $map = [
-            'AF' => ['afghanistan'],
-            'AX' => ['aland islands'],
-            'AL' => ['albania'],
-            'DZ' => ['algeria'],
-            'AS' => ['american samoa'],
-            'AD' => ['andorra'],
-            'AO' => ['angola'],
-            'AI' => ['anguilla'],
-            'AQ' => ['antarctica'],
-            'AG' => ['antigua and barbuda'],
-            'AR' => ['argentina'],
-            'AM' => ['armenia'],
-            'AW' => ['aruba'],
-            'AU' => ['australia'],
-            'AT' => ['austria'],
-            'AZ' => ['azerbaijan'],
-            'BS' => ['bahamas'],
-            'BH' => ['bahrain'],
-            'BD' => ['bangladesh'],
-            'BB' => ['barbados'],
-            'BY' => ['belarus'],
-            'BE' => ['belgium'],
-            'BZ' => ['belize'],
-            'BJ' => ['benin'],
-            'BM' => ['bermuda'],
-            'BT' => ['bhutan'],
-            'BO' => ['bolivia'],
-            'BA' => ['bosnia and herzegovina'],
-            'BW' => ['botswana'],
-            'BV' => ['bouvet island'],
-            'BR' => ['brazil'],
-            'IO' => ['british indian ocean territory'],
-            'BN' => ['brunei darussalam'],
-            'BG' => ['bulgaria'],
-            'BF' => ['burkina faso'],
-            'BI' => ['burundi'],
-            'KH' => ['cambodia'],
-            'CM' => ['cameroon'],
-            'CA' => ['canada'],
-            'CV' => ['cape verde'],
-            'KY' => ['cayman islands'],
-            'CF' => ['central african republic'],
-            'TD' => ['chad'],
-            'CL' => ['chile'],
-            'CN' => ['china'],
-            'CX' => ['christmas island'],
-            'CC' => ['cocos (keeling) islands'],
-            'CO' => ['colombia'],
-            'KM' => ['comoros'],
-            'CG' => ['congo'],
-            'CD' => ['congo, democratic republic'],
-            'CK' => ['cook islands'],
-            'CR' => ['costa rica'],
-            'CI' => ['cote d\'ivoire'],
-            'HR' => ['croatia'],
-            'CU' => ['cuba'],
-            'CY' => ['cyprus'],
-            'CZ' => ['czech republic'],
-            'DK' => ['denmark'],
-            'DJ' => ['djibouti'],
-            'DM' => ['dominica'],
-            'DO' => ['dominican republic'],
-            'EC' => ['ecuador'],
-            'EG' => ['egypt'],
-            'SV' => ['el salvador'],
-            'GQ' => ['equatorial guinea'],
-            'ER' => ['eritrea'],
-            'EE' => ['estonia'],
-            'ET' => ['ethiopia'],
-            'FK' => ['falkland islands (malvinas)'],
-            'FO' => ['faroe islands'],
-            'FJ' => ['fiji'],
-            'FI' => ['finland'],
-            'FR' => ['france'],
-            'GF' => ['french guiana'],
-            'PF' => ['french polynesia'],
-            'TF' => ['french southern territories'],
-            'GA' => ['gabon'],
-            'GM' => ['gambia'],
-            'GE' => ['georgia'],
-            'DE' => ['germany'],
-            'GH' => ['ghana'],
-            'GI' => ['gibraltar'],
-            'GR' => ['greece'],
-            'GL' => ['greenland'],
-            'GD' => ['grenada'],
-            'GP' => ['guadeloupe'],
-            'GU' => ['guam'],
-            'GT' => ['guatemala'],
-            'GG' => ['guernsey'],
-            'GN' => ['guinea'],
-            'GW' => ['guinea-bissau'],
-            'GY' => ['guyana'],
-            'HT' => ['haiti'],
-            'HM' => ['heard island & mcdonald islands'],
-            'VA' => ['holy see (vatican city state)'],
-            'HN' => ['honduras'],
-            'HK' => ['hong kong'],
-            'HU' => ['hungary'],
-            'IS' => ['iceland'],
-            'IN' => ['india'],
-            'ID' => ['indonesia'],
-            'IR' => ['iran'],
-            'IQ' => ['iraq'],
-            'IE' => ['ireland'],
-            'IM' => ['isle of man'],
-            'IL' => ['israel'],
-            'IT' => ['italy'],
-            'JM' => ['jamaica'],
-            'JP' => ['japan'],
-            'JE' => ['jersey'],
-            'JO' => ['jordan'],
-            'KZ' => ['kazakhstan'],
-            'KE' => ['kenya'],
-            'KI' => ['kiribati'],
-            'KR' => ['korea'],
-            'KW' => ['kuwait'],
-            'KG' => ['kyrgyzstan'],
-            'LA' => ['lao people\'s democratic republic'],
-            'LV' => ['latvia'],
-            'LB' => ['lebanon'],
-            'LS' => ['lesotho'],
-            'LR' => ['liberia'],
-            'LY' => ['libyan arab jamahiriya'],
-            'LI' => ['liechtenstein'],
-            'LT' => ['lithuania'],
-            'LU' => ['luxembourg'],
-            'MO' => ['macao'],
-            'MK' => ['macedonia'],
-            'MG' => ['madagascar'],
-            'MW' => ['malawi'],
-            'MY' => ['malaysia'],
-            'MV' => ['maldives'],
-            'ML' => ['mali'],
-            'MT' => ['malta'],
-            'MH' => ['marshall islands'],
-            'MQ' => ['martinique'],
-            'MR' => ['mauritania'],
-            'MU' => ['mauritius'],
-            'YT' => ['mayotte'],
-            'MX' => ['mexico'],
-            'FM' => ['micronesia, federated states of'],
-            'MD' => ['moldova'],
-            'MC' => ['monaco'],
-            'MN' => ['mongolia'],
-            'ME' => ['montenegro'],
-            'MS' => ['montserrat'],
-            'MA' => ['morocco'],
-            'MZ' => ['mozambique'],
-            'MM' => ['myanmar'],
-            'NA' => ['namibia'],
-            'NR' => ['nauru'],
-            'NP' => ['nepal'],
-            'NL' => ['netherlands'],
-            'AN' => ['netherlands antilles'],
-            'NC' => ['new caledonia'],
-            'NZ' => ['new zealand'],
-            'NI' => ['nicaragua'],
-            'NE' => ['niger'],
-            'NG' => ['nigeria'],
-            'NU' => ['niue'],
-            'NF' => ['norfolk island'],
-            'MP' => ['northern mariana islands'],
-            'NO' => ['norway'],
-            'OM' => ['oman'],
-            'PK' => ['pakistan'],
-            'PW' => ['palau'],
-            'PS' => ['palestinian territory, occupied'],
-            'PA' => ['panama'],
-            'PG' => ['papua new guinea'],
-            'PY' => ['paraguay'],
-            'PE' => ['peru'],
-            'PH' => ['philippines'],
-            'PN' => ['pitcairn'],
-            'PL' => ['poland'],
-            'PT' => ['portugala'],
-            'PR' => ['puerto rico'],
-            'QA' => ['qatar'],
-            'RE' => ['reunion'],
-            'RO' => ['romania'],
-            'RU' => ['russian federation', 'russia'],
-            'RW' => ['rwanda'],
-            'BL' => ['saint barthelemy'],
-            'SH' => ['saint helena'],
-            'KN' => ['saint kitts and nevis'],
-            'LC' => ['saint lucia'],
-            'MF' => ['saint martin'],
-            'PM' => ['saint pierre and miquelon'],
-            'VC' => ['saint vincent and grenadines'],
-            'WS' => ['samoa'],
-            'SM' => ['san marino'],
-            'ST' => ['sao tome and principe'],
-            'SA' => ['saudi arabia'],
-            'SN' => ['senegal'],
-            'RS' => ['serbia'],
-            'SC' => ['seychelles'],
-            'SL' => ['sierra leone'],
-            'SG' => ['singapore'],
-            'SK' => ['slovakia'],
-            'SI' => ['slovenia'],
-            'SB' => ['solomon islands'],
-            'SO' => ['somalia'],
-            'ZA' => ['south africa'],
-            'GS' => ['south georgia and sandwich isl.'],
-            'ES' => ['spain'],
-            'LK' => ['sri lanka'],
-            'SD' => ['sudan'],
-            'SR' => ['suriname'],
-            'SJ' => ['svalbard and jan mayen'],
-            'SZ' => ['swaziland'],
-            'SE' => ['sweden'],
-            'CH' => ['switzerland'],
-            'SY' => ['syrian arab republic'],
-            'TW' => ['taiwan'],
-            'TJ' => ['tajikistan'],
-            'TZ' => ['tanzania'],
-            'TH' => ['thailand'],
-            'TL' => ['timor-leste'],
-            'TG' => ['togo'],
-            'TK' => ['tokelau'],
-            'TO' => ['tonga'],
-            'TT' => ['trinidad and tobago'],
-            'TN' => ['tunisia'],
-            'TR' => ['turkey'],
-            'TM' => ['turkmenistan'],
-            'TC' => ['turks and caicos islands'],
-            'TV' => ['tuvalu'],
-            'UG' => ['uganda'],
-            'UA' => ['ukraine'],
-            'AE' => ['united arab emirates', 'uae'],
-            'GB' => ['united kingdom', 'uk', 'england'],
-            'US' => ['united states', 'usa', 'america'],
-            'UM' => ['united states outlying islands'],
-            'UY' => ['uruguay'],
-            'UZ' => ['uzbekistan'],
-            'VU' => ['vanuatu'],
-            'VE' => ['venezuela'],
-            'VN' => ['vietnam'],
-            'VG' => ['virgin islands, british'],
-            'VI' => ['virgin islands, u.s.'],
-            'WF' => ['wallis and futuna'],
-            'EH' => ['western sahara'],
-            'YE' => ['yemen'],
-            'ZM' => ['zambia'],
-            'ZW' => ['zimbabwe']
-        ];
+        $title = strtolower($title);
 
-        $regionText = strtolower(trim($regionText));
+        // Standardize common patterns
+        $title = str_replace(['+', '&', '/'], ' ', $title);
 
-        if (isset($map[$countryCode])) {
-            foreach ($map[$countryCode] as $pattern) {
-                if (strpos($regionText, $pattern) !== false) {
-                    return true;
-                }
-            }
-        }
+        // Remove special characters but keep letters, numbers and spaces
+        $title = preg_replace('/[^a-z0-9\s]/', '', $title);
 
-        // Special cases
-        $globalPatterns = ['global', 'world', 'international'];
-        foreach ($globalPatterns as $pattern) {
-            if (strpos($regionText, $pattern) !== false) {
-                return true;
-            }
-        }
+        // Trim and clean up spaces
+        $title = preg_replace('/\s+/', ' ', $title);
+        $title = trim($title);
 
-        return false;
+        return $title;
     }
 }

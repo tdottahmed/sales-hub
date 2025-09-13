@@ -43,8 +43,11 @@
                                                             label="Supplier Products" />
                 <x-layouts.admin.partials.sidebar-menu-item route="driffleProducts.index" icon="ri ri-store-line"
                                                             label="Driffle Products" />
+                <x-layouts.admin.partials.sidebar-menu-item route="driffleProducts.mapProducts" icon="ri-map-pin-line"
+                                                            label="Mapped Products(Driffle)" />
                 <x-layouts.admin.partials.sidebar-menu-item route="applicationSetup.index" icon="ri-settings-3-line"
                     label="Settings" />
+
 
             </ul>
         </div>
