@@ -14,7 +14,7 @@ use Throwable;
 
 class SyncSupplierProducts extends Command
 {
-    protected $signature = 'sync:supplier-products {--chunk=1}';
+    protected $signature = 'sync:supplier-products {--chunk=100}';
     protected $description = 'Sync supplier products into structured products/variations/categories';
 
     public function handle()
@@ -118,6 +118,7 @@ class SyncSupplierProducts extends Command
                                     'uuid' => $variation['_id'] ?? null,
                                     'name' => $varName,
                                     'currency_code' => $data['currencyCode'] ?? null,
+                                    'country_code' => $data['countryCode'] ?? null,
                                     'min_price' => $prices['min'] ?? null,
                                     'max_price' => $prices['max'] ?? null,
                                     'min_face_value' => $variation['minFaceValue']?? null,
