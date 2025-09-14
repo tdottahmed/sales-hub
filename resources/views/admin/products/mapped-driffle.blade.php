@@ -9,7 +9,8 @@
             <thead>
             <tr>
                 <th>ID</th>
-                <th>Title</th>
+                <th>Driffle Title</th>
+                <th>Supplier product Title</th>
                 <th>Platform</th>
                 <th>Region</th>
                 <th>Offer Created</th>
@@ -32,6 +33,7 @@
                 <tr>
                     <td>{{ $product->id }}</td>
                     <td>{{ $product->driffleProduct->title }}</td>
+                    <td>{{ $product->product->name }}</td>
                     <td>{{ $product->driffleProduct->platform }}</td>
                     <td>{{ $product->driffleProduct->regions }}</td>
                     <td>No</td>
