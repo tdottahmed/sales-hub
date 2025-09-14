@@ -33,21 +33,22 @@
                 <x-layouts.admin.partials.sidebar-menu-item route="dashboard" icon="ri-dashboard-line"
                     label="Dashboard" />
 
-                <x-layouts.admin.partials.sidebar-menu-item route="roles.index" icon="ri-user-2-line"
-                    label="Users Management" :dropdown-routes="[
-                        'roles.index' => 'Roles',
-                        'permissions.index' => 'Permissions',
-                        'users.index' => 'Users',
-                    ]" />
-                <x-layouts.admin.partials.sidebar-menu-item route="supplierProducts.index" icon="ri ri-store-line"
+                <x-layouts.admin.partials.sidebar-menu-item route="driffleProducts.index" icon="ri-store-line"
+                                                            label="Driffle Products" :dropdown-routes="[
+                        'driffleProducts.index' => 'Driffle Products',
+                        'driffleProducts.mapProducts' => 'Mapped Products',
+                        'driffleProducts.manualMap' => 'Manual Map',
+                    ]"/>
+                <x-layouts.admin.partials.sidebar-menu-item route="supplierProducts.index" icon="ri ri-store-3-line"
                                                             label="Supplier Products" />
-                <x-layouts.admin.partials.sidebar-menu-item route="driffleProducts.index" icon="ri ri-store-line"
-                                                            label="Driffle Products" />
-                <x-layouts.admin.partials.sidebar-menu-item route="driffleProducts.mapProducts" icon="ri-map-pin-line"
-                                                            label="Mapped Products(Driffle)" />
+                <x-layouts.admin.partials.sidebar-menu-item route="offers.create" icon="ri ri-award-line"
+                                                            label="Offer Management" :dropdown-routes="[
+                        'offers.create' => 'Create Driffle Offer',
+                        'offers.index' => 'Existing Offers',
+                    ]" />
+
                 <x-layouts.admin.partials.sidebar-menu-item route="applicationSetup.index" icon="ri-settings-3-line"
                     label="Settings" />
-
 
             </ul>
         </div>

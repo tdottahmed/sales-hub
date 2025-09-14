@@ -13,7 +13,6 @@
                     <th>Supplier product Title</th>
                     <th>Platform</th>
                     <th>Region</th>
-                    <th>Offer Created</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -49,33 +48,6 @@
                             @else
                                 <span class="badge bg-success">Offer Created</span>
                             @endif
-                        </td>
-                        <td>
-                            <div class="dropdown">
-                                <button class="btn btn-soft-secondary btn-sm dropdown" type="button"
-                                    data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="ri-more-fill align-middle"></i>
-                                </button>
-                                <ul class="dropdown-menu dropdown-menu-end">
-                                    <li>
-                                        <form method="POST"
-                                            action="{{ route('driffleProducts.createOffer', $product->id) }}">
-                                            @csrf
-                                            <button type="submit" class="dropdown-item">
-                                                <i class="ri-file-add-fill"></i> Create Offer
-                                            </button>
-                                        </form>
-                                    </li>
-                                    <li>
-                                        <form method="POST" action="#">
-                                            @csrf @method('DELETE')
-                                            <button type="button" class="dropdown-item text-danger remove-item-btn">
-                                                <i class="ri-delete-bin-line"></i> Delete
-                                            </button>
-                                        </form>
-                                    </li>
-                                </ul>
-                            </div>
                         </td>
                     </tr>
                 @endforeach

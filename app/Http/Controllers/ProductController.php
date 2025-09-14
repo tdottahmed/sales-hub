@@ -77,4 +77,20 @@ class ProductController extends Controller
             return redirect()->back()->with('error', 'Error creating offer: ' . $e->getMessage());
         }
     }
+
+    public function driffleManualMap()
+    {
+        return view('admin.offers.driffle-manual-map');
+    }
+
+    public function driffleCreateOffer()
+    {
+        $products = SimilarProduct::with(['driffleProduct', 'product'])->where('source', 'driffle')->paginate(20);
+        return view('admin.offers.mapped', compact('products'));
+    }
+    public function offerList()
+    {
+        $offers = DriffleOffer::with('driffleProduct')->paginate(20);
+        return view('admin.offers.index', compact('offers'));
+    }
 }
