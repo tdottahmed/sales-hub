@@ -3,8 +3,9 @@
 namespace App\Services;
 
 use App\Models\SupplierProduct;
+use Illuminate\Support\Facades\Http;
 
-class FetchSupplierProduct
+class SupplierService
 {
     protected string $supplierUrl;
     protected string $apiKey;
@@ -18,7 +19,7 @@ class FetchSupplierProduct
     public function fetch()
     {
         try {
-            $response = \Http::withHeaders([
+            $response = Http::withHeaders([
                 'Content-Type' => 'application/json',
                 'x-api-key' => $this->apiKey
             ])->get($this->supplierUrl);
@@ -45,4 +46,19 @@ class FetchSupplierProduct
             throw new \Exception('Failed to insert supplier products: '.$e->getMessage());
         }
     }
+
+    public function createOrder(array $orderData)
+    {
+        try {
+            $response = Http::withHeaders([
+                'Content-Type' => 'application/json',
+                'x-api-key' => $this->apiKey
+            ])->post($this->supplierUrl.'/order', $orderData);
+
+            return $response->json();
+        } catch (\Exception $e) {
+            throw new \Exception('Failed to create supplier order: '.$e->getMessage());
+        }
+    }
+
 }

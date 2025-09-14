@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Services\FetchSupplierProduct;
+use App\Services\SupplierService;
 use Illuminate\Console\Command;
 
 class SupplierProductFetch extends Command
@@ -24,7 +24,7 @@ class SupplierProductFetch extends Command
     /**
      * Execute the console command.
      */
-    public function handle(FetchSupplierProduct $fetchSupplierProduct)
+    public function handle(SupplierService $fetchSupplierProduct)
     {
         try {
             if (!$this->option('force') && !$this->confirm('Do you wish to fetch supplier products?')) {
