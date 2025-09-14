@@ -27,6 +27,6 @@ Route::group(['middleware' => ['role:super-admin|admin|staff|user']], function (
     Route::get('driffle-products/show/{driffleProduct}', [ProductController::class, 'driffleProductsShow'])->name('driffleProducts.show');
 
     Route::get('driffle/map-products', [ProductController::class, 'driffleMapProducts'])->name('driffleProducts.mapProducts');
-    Route::get('driffle/create-offer/{similarProduct}', [ProductController::class, 'createOffer'])->name('driffleProducts.createOffer');
+    Route::post('driffle/create-offer/{similarProduct}', [ProductController::class, 'createOffer'])->name('driffleProducts.createOffer');
 
 });

@@ -1,0 +1,11 @@
+{
+    "message": "text",
+    "statusCode": 1,
+    "offer": {
+      "offerId": 1,
+      "productId": 1,
+      "yourPrice": 1,
+      "finalSellingPrice": 1,
+      "availableStock": 1
+    }
+  }

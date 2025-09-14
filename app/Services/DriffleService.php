@@ -17,10 +17,6 @@ class DriffleService
         $this->apiKey  = (string) Config::get('credentials.driffle.api_key', '');
     }
 
-    /**
-     * Request an access token from Driffle and cache it.
-     * Token is cached for ~29 minutes by default.
-     */
     public function getAccessToken(): string
     {
         if (empty($this->apiKey)) {
@@ -32,69 +28,136 @@ class DriffleService
         return Cache::remember($cacheKey, now()->addMinutes(29), function () {
             $response = Http::baseUrl($this->baseUrl)
                 ->asJson()
-                ->withHeaders([
-                    'Content-Type' => 'application/json',
-                ])
-                ->post('/api/seller/legacy/token', [
-                    'apiKey' => $this->apiKey,
-                ])
+                ->withHeaders(['Content-Type' => 'application/json'])
+                ->post('/api/seller/legacy/token', ['apiKey' => $this->apiKey])
                 ->throw();
 
             $json = $response->json() ?? [];
 
-            // Try common token locations
-            $token = $json['token']
+            return $json['token']
                 ?? ($json['data']['token'] ?? null)
-                ?? ($json['access_token'] ?? null);
-
-            if (!$token || !is_string($token)) {
-                throw new \RuntimeException('Unable to retrieve token from Driffle token endpoint.');
-            }
-
-            return $token;
+                ?? ($json['access_token'] ?? null)
+                ?? throw new \RuntimeException('Unable to retrieve token from Driffle token endpoint.');
         });
     }
 
-    /**
-     * Fetch products via GET with pagination.
-     * Example: /api/seller/legacy/products?page=3&limit=100
-     */
-    public function getProducts(int $page = 1, int $limit = 100): array
+    protected function withAuth()
     {
         $token = $this->getAccessToken();
 
-        $response = Http::baseUrl($this->baseUrl)
+        return Http::baseUrl($this->baseUrl)
             ->acceptJson()
             ->withToken($token)
-            ->get('/api/seller/legacy/products', [
-                'page'  => $page,
-                'limit' => $limit,
-            ]);
-
-        $response->throw();
-
-        return $response->json() ?? [];
+            ->withHeaders(['Content-Type' => 'application/json']);
     }
 
     /**
-     * Simple iterator to go through all pages until fewer than $limit items are returned.
+     * Create a new offer
      */
-    public function iterateAllProducts(int $limit = 100): \Generator
+    public function createOffer(int $productId, float $yourPrice): array
     {
-        $page = 1;
-        while (true) {
-            $data = $this->getProducts($page, $limit);
 
-            $items = $data['data'] ?? $data['items'] ?? $data['results'] ?? [];
-            foreach ($items as $item) {
-                yield $item;
-            }
+        $seller_api_403_error = config('app.driffle_endpoint_403', false);
 
-            if (count($items) < $limit) {
-                break;
-            }
+        // check if api_403_error is true then read dummy json file from public/dummy-response/offers/create.json
 
-            $page++;
+        $response = null;
+        if ($seller_api_403_error) {
+            $response = file_get_contents(public_path('dummy-response/offers/create.json'));
+            return json_decode($response, true);
         }
+
+        // if empty product id or your price return
+        if (empty($productId) || empty($yourPrice)) {
+            return ['error' => 'Product id or your price is empty'];
+        }
+
+        $response = $this->withAuth()->post('/api/seller/legacy/offer', [
+            'product'   => ['productId' => $productId],
+            'yourPrice' => $yourPrice,
+        ]);
+
+        $response->throw();
+        return $response->json();
+    }
+
+    /**
+     * Update an existing offer
+     */
+    public function updateOffer(
+        int $offerId,
+        float $yourPrice,
+        ?float $retailPrice = null,
+        ?string $toggleOffer = null,
+        ?int $declaredStock = null
+    ): array {
+
+        // basic validation
+        if (empty($offerId) || empty($yourPrice)) {
+            return ['error' => 'Offer id or your price is empty'];
+        }
+
+        // build payload only with non-empty values
+        $payload = [
+            'offerId'   => $offerId,
+            'yourPrice' => $yourPrice,
+        ];
+
+        if (!empty($retailPrice)) {
+            $payload['retailPrice'] = $retailPrice;
+        }
+
+        if (!empty($toggleOffer)) {
+            $payload['toggleOffer'] = $toggleOffer; // "enable" or "disable"
+        }
+
+        if (!is_null($declaredStock)) {
+            $payload['declaredStock'] = $declaredStock;
+        }
+
+        $response = $this->withAuth()->patch('/api/seller/legacy/offer/update', $payload);
+
+        $response->throw();
+        return $response->json();
+    }
+
+    /**
+     * Enable / Disable an offer
+     */
+    public function toggleOffer(int $offerId, string $type = 'enable'): array
+    {
+
+        // if empty offer id return
+        if (empty($offerId)) {
+            return ['error' => 'Offer id is empty'];
+        }
+
+        $response = $this->withAuth()->put('/api/seller/legacy/offer/toggle', [
+            'offerId' => $offerId,
+            'type'    => $type, // "enable" or "disable"
+        ]);
+
+        $response->throw();
+        return $response->json();
+    }
+
+    /**
+     * Update offer price
+     */
+    public function updateOfferPrice(int $offerId, float $price): array
+    {
+
+        // if empty offer id or price return
+        if (empty($offerId) || empty($price)) {
+            return ['error' => 'Offer id or price is empty'];
+        }
+
+        $response = $this->withAuth()->put('/api/seller/legacy/offer/update-price', [
+            'offerId' => $offerId,
+            'price'   => $price,
+        ]);
+
+        $response->throw();
+        return $response->json();
     }
 }
