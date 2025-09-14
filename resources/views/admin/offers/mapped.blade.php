@@ -13,7 +13,6 @@
                     <th>Supplier product Title</th>
                     <th>Platform</th>
                     <th>Region</th>
-                    <th>Offer Created</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -37,8 +36,8 @@
                         <td>{{ $product->product->name }}</td>
                         <td>{{ $product->driffleProduct->platform }}</td>
                         <td>{{ $product->driffleProduct->regions }}</td>
-                        <td>No</td>
                         <td>
+                            @if(!$product->is_created_offer)
                                 <form method="POST"
                                       action="{{ route('driffleProducts.createOffer', $product->id) }}">
                                     @csrf
@@ -46,6 +45,9 @@
                                         <i class="ri-file-add-fill"></i> Create Offer
                                     </button>
                                 </form>
+                            @else
+                                <span class="badge bg-success">Offer Created</span>
+                            @endif
                         </td>
                     </tr>
                 @endforeach

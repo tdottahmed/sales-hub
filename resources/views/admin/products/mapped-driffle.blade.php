@@ -37,7 +37,19 @@
                         <td>{{ $product->product->name }}</td>
                         <td>{{ $product->driffleProduct->platform }}</td>
                         <td>{{ $product->driffleProduct->regions }}</td>
-                        <td>No</td>
+                        <td>
+                            @if(!$product->is_created_offer)
+                                <form method="POST"
+                                      action="{{ route('driffleProducts.createOffer', $product->id) }}">
+                                    @csrf
+                                    <button type="submit" class="dropdown-item">
+                                        <i class="ri-file-add-fill"></i> Create Offer
+                                    </button>
+                                </form>
+                            @else
+                                <span class="badge bg-success">Offer Created</span>
+                            @endif
+                        </td>
                         <td>
                             <div class="dropdown">
                                 <button class="btn btn-soft-secondary btn-sm dropdown" type="button"
