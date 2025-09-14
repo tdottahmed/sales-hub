@@ -19,7 +19,7 @@
             </thead>
             <tbody>
             <tr>
-                <td colspan="6">
+                <td colspan="7">
                     <form action="{{ route('driffleProducts.index') }}" method="GET" class="mb-3">
                         <div class="input-group">
                             <input type="text" name="search" class="form-control"
@@ -45,8 +45,8 @@
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li>
-                                    <a href="{{route('driffleProducts.show', $product->id)}}" class="dropdown-item">
-                                        <i class="ri-eye-2-line"></i> Details
+                                    <a href="{{route('driffleProducts.createOffer', $product->id)}}" class="dropdown-item">
+                                        <i class="ri-file-add-fill"></i> Create Offer
                                     </a>
                                 </li>
                                 <li>

@@ -46,4 +46,10 @@ class ProductController extends Controller
         $products = SimilarProduct::with(['driffleProduct', 'product'])->paginate(20);
         return view('admin.products.mapped-driffle', compact('products'));
     }
+
+    public function createOffer(SimilarProduct $similarProduct)
+    {
+        dd($similarProduct);
+        return view('admin.products.create-offer');
+    }
 }
