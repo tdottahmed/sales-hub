@@ -23,6 +23,8 @@ return new class extends Migration
             $table->decimal('min_price', 10, 2);
             $table->decimal('max_price', 10, 2);
             $table->string('currency_code', 5);
+            $table->string('country_code', 5);
+            $table->boolean('is_mapped')->default(false);
             $table->timestamp('modified_date')->nullable();
             $table->timestamps();
         });
