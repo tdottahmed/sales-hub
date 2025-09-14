@@ -43,7 +43,7 @@ class ProductController extends Controller
 
     public function driffleMapProducts()
     {
-        $products = SimilarProduct::with(['driffleProduct', 'product'])->paginate(20);
+        $products = SimilarProduct::with(['driffleProduct', 'product'])->where('source', 'driffle')->paginate(20);
         return view('admin.products.mapped-driffle', compact('products'));
     }
 
