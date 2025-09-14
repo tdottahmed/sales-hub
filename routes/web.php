@@ -23,4 +23,3 @@ Route::get('/misc', [\App\Http\Controllers\MiscController::class, 'index']);
 require __DIR__ . '/auth.php';
 require __DIR__ . '/admin.php';
 require __DIR__ . '/frontend.php';
-require __DIR__ . '/webhook.php';

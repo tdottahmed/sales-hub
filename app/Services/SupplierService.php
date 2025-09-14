@@ -50,15 +50,21 @@ class SupplierService
     public function createOrder(array $orderData)
     {
         try {
-            $response = Http::withHeaders([
-                'Content-Type' => 'application/json',
-                'x-api-key' => $this->apiKey
-            ])->post($this->supplierUrl.'/order', $orderData);
+            logger()->info('Order data: ', $orderData);
 
-            return $response->json();
+            // Dummy JSON file read
+            $jsonPath = public_path('dummy-response/suppliers/order.json');
+            $jsonContent = file_get_contents($jsonPath);
+
+            if ($jsonContent === false) {
+                throw new \Exception("Dummy response file not found at: {$jsonPath}");
+            }
+
+            return json_decode($jsonContent, true);
         } catch (\Exception $e) {
-            throw new \Exception('Failed to create supplier order: '.$e->getMessage());
+            throw new \Exception('Failed to create supplier order: ' . $e->getMessage());
         }
     }
+
 
 }
