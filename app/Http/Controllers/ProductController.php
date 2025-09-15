@@ -154,13 +154,19 @@ class ProductController extends Controller
     public function toggleOffer(DriffleOffer $offer)
     {
         try {
+            // Determine the new status based on current status
+            $newStatus = ($offer->status === 'disable') ? 'enable' : 'disable';
+            
             // Call DriffleService to toggle offer (enable/disable)
             $driffleService = new DriffleService();
-            $response = $driffleService->toggleOffer($offer->offer_id, 'enable');
+            $response = $driffleService->toggleOffer($offer->offer_id, $newStatus);
 
             // Check if response is successful
             if (isset($response) && $response['statusCode'] === 1) {
-                return redirect()->back()->with('success', 'Offer toggled successfully');
+                // Update the status in the database
+                $offer->update(['status' => $newStatus]);
+                
+                return redirect()->back()->with('success', "Offer {$newStatus}d successfully");
             } else {
                 return redirect()->back()->with('error', 'Failed to toggle offer: ' . ($response['message'] ?? 'Unknown error'));
             }
