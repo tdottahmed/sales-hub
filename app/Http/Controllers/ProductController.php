@@ -96,16 +96,76 @@ class ProductController extends Controller
 
     public function updateOffer(DriffleOffer $offer)
     {
-        // TODO: Implement update offer functionality
+        try {
+            // Call DriffleService to update offer
+            $driffleService = new DriffleService();
+            $response = $driffleService->updateOffer(
+                $offer->offer_id,
+                $offer->your_price,
+                // $offer->retail_price,
+            );
+
+            // Check if response is successful
+            if (isset($response) && $response['statusCode'] === 1) {
+                // Update the offer in database if needed
+                $offer->update([
+                    'your_price' => $response['data']['yourPrice'] ?? $offer->your_price,
+                    // 'retail_price' => $response['data']['retailPrice'] ?? $offer->retail_price,
+                    'final_selling_price' => $response['data']['finalSellingPrice'] ?? $offer->final_selling_price,
+                    'available_stock' => $response['data']['availableStock'] ?? $offer->available_stock,
+                ]);
+
+                return redirect()->back()->with('success', 'Offer updated successfully');
+            } else {
+                return redirect()->back()->with('error', 'Failed to update offer: ' . ($response['message'] ?? 'Unknown error'));
+            }
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Error updating offer: ' . $e->getMessage());
+        }
     }
 
     public function updateOfferPrice(DriffleOffer $offer)
     {
-        // TODO: Implement update offer price functionality
+        try {
+            // Call DriffleService to update offer price
+            $driffleService = new DriffleService();
+            $response = $driffleService->updateOfferPrice(
+                $offer->offer_id,
+                $offer->your_price
+            );
+
+            // Check if response is successful
+            if (isset($response) && $response['statusCode'] === 200) {
+                // Update the offer price in database if needed
+                $offer->update([
+                    'your_price' => $response['data']['yourPrice'] ?? $offer->your_price,
+                    'final_selling_price' => $response['data']['finalSellingPrice'] ?? $offer->final_selling_price,
+                ]);
+
+                return redirect()->back()->with('success', 'Offer price updated successfully');
+            } else {
+                return redirect()->back()->with('error', 'Failed to update offer price: ' . ($response['message'] ?? 'Unknown error'));
+            }
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Error updating offer price: ' . $e->getMessage());
+        }
     }
 
     public function toggleOffer(DriffleOffer $offer)
     {
-        // TODO: Implement toggle offer functionality
+        try {
+            // Call DriffleService to toggle offer (enable/disable)
+            $driffleService = new DriffleService();
+            $response = $driffleService->toggleOffer($offer->offer_id, 'enable');
+
+            // Check if response is successful
+            if (isset($response) && $response['statusCode'] === 1) {
+                return redirect()->back()->with('success', 'Offer toggled successfully');
+            } else {
+                return redirect()->back()->with('error', 'Failed to toggle offer: ' . ($response['message'] ?? 'Unknown error'));
+            }
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Error toggling offer: ' . $e->getMessage());
+        }
     }
 }
