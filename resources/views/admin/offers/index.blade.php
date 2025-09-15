@@ -25,17 +25,24 @@
                     <td>
                        <div class="d-flex gap-2">
                            <form method="POST"
-                                 action="{{ route('driffleProducts.createOffer', $offer->id) }}">
-                               @csrf
-                               <button type="submit" class="btn btn-primary btn-sm">
-                                   <i class="ri-file-add-fill"></i> Create Offer
-                               </button>
-                           </form>
-                           <form method="POST"
-                                 action="{{ route('driffleProducts.createOffer', $offer->id) }}">
+                                 action="{{ route('driffleProducts.updateOffer', $offer->id) }}">
                                @csrf
                                <button type="submit" class="btn btn-primary btn-sm">
                                    <i class="ri-file-info-fill"></i> Update Offer
+                               </button>
+                           </form>
+                           <form method="POST"
+                                 action="{{ route('driffleProducts.updateOfferPrice', $offer->id) }}">
+                               @csrf
+                               <button type="submit" class="btn btn-primary btn-sm">
+                                   <i class="ri-file-info-fill"></i> Update Offer Price
+                               </button>
+                           </form>
+                           <form method="POST"
+                                 action="{{ route('driffleProducts.toggleOffer', $offer->id) }}">
+                               @csrf
+                               <button type="submit" class="btn btn-primary btn-sm">
+                                   <i class="ri-file-info-fill"></i> Toggle Offer
                                </button>
                            </form>
                        </div>

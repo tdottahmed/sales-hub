@@ -31,6 +31,9 @@ Route::group(['middleware' => ['role:super-admin|admin|staff|user']], function (
 
 
     Route::post('driffle/create-offer/{similarProduct}', [ProductController::class, 'createOffer'])->name('driffleProducts.createOffer');
+    Route::post('/driffle/update-offer/{offer}', [ProductController::class, 'updateOffer'])->name('driffleProducts.updateOffer');
+    Route::post('/driffle/update-offer-price/{offer}', [ProductController::class, 'updateOfferPrice'])->name('driffleProducts.updateOfferPrice');
+    Route::post('/driffle/toggle-offer/{offer}', [ProductController::class, 'toggleOffer'])->name('driffleProducts.toggleOffer');
     Route::get('driffle/offer-list', [ProductController::class, 'offerList'])->name('offers.index');
     Route::get('offer/create', [ProductController::class, 'driffleCreateOffer'])->name('offers.create');
 

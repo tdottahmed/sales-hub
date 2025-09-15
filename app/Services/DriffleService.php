@@ -57,6 +57,11 @@ class DriffleService
     public function createOffer(int $productId, float $yourPrice): array
     {
 
+        // if empty product id or your price return
+        if (empty($productId) || empty($yourPrice)) {
+            return ['error' => 'Product id or your price is empty'];
+        }
+
         $seller_api_403_error = config('app.driffle_endpoint_403', false);
 
         // check if api_403_error is true then read dummy json file from public/dummy-response/offers/create.json
@@ -65,11 +70,6 @@ class DriffleService
         if ($seller_api_403_error) {
             $response = file_get_contents(public_path('dummy-response/offers/create.json'));
             return json_decode($response, true);
-        }
-
-        // if empty product id or your price return
-        if (empty($productId) || empty($yourPrice)) {
-            return ['error' => 'Product id or your price is empty'];
         }
 
         $response = $this->withAuth()->post('/api/seller/legacy/offer', [
